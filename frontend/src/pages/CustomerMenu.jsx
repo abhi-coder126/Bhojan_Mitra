@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Leaf, Minus, PackageCheck, Plus, Search, ShoppingBag, Sparkles, Utensils } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
@@ -27,6 +27,7 @@ export default function CustomerMenu() {
   });
   const [placing, setPlacing] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(null);
+  const cartPanelRef = useRef(null);
   const { toast, showToast } = useToast();
 
   useEffect(() => {
@@ -267,6 +268,9 @@ export default function CustomerMenu() {
   const startCheckout = () => {
     if (cart.length === 0) return showToast("Please add a menu item first", "warning");
     setCheckoutStep("details");
+    window.setTimeout(() => {
+      cartPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   };
 
   const renderProductCard = (product, index) => {
@@ -342,7 +346,7 @@ export default function CustomerMenu() {
   };
 
   return (
-    <div className="customer-menu-page">
+    <div className={`customer-menu-page ${checkoutStep === "details" ? "checkout-open" : ""}`}>
       <ToastViewport toast={toast} />
 
       {menuLoading && (
@@ -478,7 +482,7 @@ export default function CustomerMenu() {
           </div>
         </section>
 
-        <aside className="menu-cart-panel">
+        <aside className="menu-cart-panel" ref={cartPanelRef}>
           <div className="menu-cart-head">
             <ShoppingBag size={19} />
             <h2>Your Order</h2>
@@ -577,6 +581,24 @@ export default function CustomerMenu() {
           )}
         </aside>
       </main>
+
+      {cart.length > 0 && !orderPlaced && (
+        <div className="mobile-cart-cta">
+          <div>
+            <span>{cartQty} items</span>
+            <strong>Rs {payableTotal.toFixed(2)}</strong>
+          </div>
+          {checkoutStep === "cart" ? (
+            <button type="button" onClick={startCheckout}>
+              Continue
+            </button>
+          ) : (
+            <button type="button" disabled={placing} onClick={placeOrder}>
+              {placing ? "Sending..." : "Place Order"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

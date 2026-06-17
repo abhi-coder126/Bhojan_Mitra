@@ -6,6 +6,11 @@ export default function TableBarcodes() {
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
+    if (import.meta.env.VITE_CUSTOMER_MENU_BASE_URL) {
+      setOrigin(import.meta.env.VITE_CUSTOMER_MENU_BASE_URL.replace(/\/$/, ""));
+      return;
+    }
+
     const host = window.location.hostname;
     const protocol = window.location.protocol;
     const port = window.location.port ? `:${window.location.port}` : "";

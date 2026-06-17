@@ -2185,6 +2185,10 @@
     @apply h-9 rounded-lg bg-white px-3 py-1 text-xs font-black text-slate-700 hover:bg-slate-100;
   }
 
+  .mobile-cart-cta {
+    @apply hidden;
+  }
+
   .checkout-step-head span {
     @apply text-xs font-black uppercase tracking-[0.08em] text-slate-500;
   }
@@ -3183,6 +3187,196 @@
 }
 
 @media (max-width: 760px) {
+  .customer-menu-page {
+    @apply px-2.5 pb-28 pt-3;
+  }
+
+  .menu-hero {
+    @apply mb-3 gap-3 rounded-2xl p-4;
+  }
+
+  .menu-hero::before {
+    @apply bg-[length:120%_auto] opacity-[0.1];
+  }
+
+  .menu-hero::after {
+    @apply bg-[linear-gradient(180deg,rgba(127,6,21,0.96),rgba(220,38,38,0.82))];
+  }
+
+  .menu-hero span {
+    @apply mb-2 text-xs;
+  }
+
+  .menu-hero h1 {
+    @apply text-[28px] leading-tight;
+  }
+
+  .menu-hero p {
+    @apply text-sm leading-6 text-white/85;
+  }
+
+  .menu-hero-total {
+    @apply min-w-0 rounded-xl p-3;
+  }
+
+  .menu-hero-total strong {
+    @apply text-xl;
+  }
+
+  .menu-search {
+    @apply sticky top-2 z-30 mb-3 min-h-12 rounded-xl px-3;
+  }
+
+  .menu-search input {
+    @apply min-h-12 text-base;
+  }
+
+  .order-menu-browser {
+    @apply min-h-0 overflow-visible rounded-xl;
+  }
+
+  .customer-category-sidebar {
+    @apply sticky top-[66px] z-20 rounded-t-xl bg-white/95 p-2 backdrop-blur;
+  }
+
+  .food-filter-tabs {
+    @apply gap-1.5;
+  }
+
+  .food-filter-tabs button {
+    @apply min-h-10 rounded-lg px-2 text-[11px];
+  }
+
+  .customer-category-list {
+    @apply mt-2 gap-1 overflow-x-auto pb-1;
+  }
+
+  .customer-category-list button {
+    @apply min-w-[132px] rounded-lg px-3 py-2.5;
+  }
+
+  .customer-items-pane {
+    @apply gap-3 p-2.5;
+  }
+
+  .customer-menu-section {
+    @apply rounded-xl p-2.5;
+  }
+
+  .customer-menu-section-head h2 {
+    @apply text-xl;
+  }
+
+  .customer-category-head {
+    @apply rounded-lg px-2.5 py-2;
+  }
+
+  .customer-category-head h3 {
+    @apply text-base;
+  }
+
+  .customer-items-pane .menu-product-card {
+    @apply grid-cols-[86px_minmax(0,1fr)] gap-2.5 rounded-xl p-2.5;
+  }
+
+  .menu-food-art {
+    @apply rounded-xl;
+  }
+
+  .menu-product-info h2 {
+    @apply text-base leading-snug;
+  }
+
+  .menu-product-info p {
+    @apply text-xs leading-5;
+  }
+
+  .menu-product-info strong {
+    @apply text-base;
+  }
+
+  .customer-items-pane .menu-add-control {
+    @apply col-span-full h-11 justify-between rounded-xl bg-red-50 px-2;
+  }
+
+  .menu-add-control button {
+    @apply h-9 min-w-12 rounded-lg;
+  }
+
+  .menu-cart-panel {
+    @apply rounded-xl p-3;
+  }
+
+  .checkout-open .menu-cart-panel {
+    @apply order-first;
+  }
+
+  .customer-details-step {
+    @apply rounded-xl p-2.5;
+  }
+
+  .menu-cart-panel input,
+  .menu-cart-panel textarea {
+    @apply min-h-12 rounded-xl text-base;
+  }
+
+  .coupon-apply-row {
+    @apply grid-cols-1;
+  }
+
+  .coupon-apply-row button {
+    @apply w-full;
+  }
+
+  .customer-status-timeline {
+    @apply grid-cols-1;
+  }
+
+  .order-tracking-panel {
+    @apply rounded-xl p-3;
+  }
+
+  .mobile-cart-cta {
+    @apply fixed bottom-0 left-0 right-0 z-[9999] grid grid-cols-[1fr_auto] items-center gap-3 border-t border-red-100 bg-white/95 px-3 py-3 shadow-[0_-14px_34px_rgba(127,6,21,0.16)] backdrop-blur;
+  }
+
+  .mobile-cart-cta div {
+    @apply grid gap-0.5;
+  }
+
+  .mobile-cart-cta span {
+    @apply text-xs font-black uppercase tracking-[0.06em] text-slate-500;
+  }
+
+  .mobile-cart-cta strong {
+    @apply text-lg font-black text-slate-950;
+  }
+
+  .mobile-cart-cta button {
+    @apply min-h-12 rounded-xl bg-red-600 px-5 text-sm font-black text-white hover:bg-red-700 disabled:bg-red-300;
+  }
+
+  .table-barcodes-page .main-content,
+  .table-barcodes-page {
+    @apply max-w-full;
+  }
+
+  .qr-admin-panel {
+    @apply rounded-xl p-3;
+  }
+
+  .qr-admin-head input {
+    @apply h-12;
+  }
+
+  .table-qr-card {
+    @apply rounded-xl p-3;
+  }
+
+  .table-qr-card span {
+    @apply break-all text-xs leading-5;
+  }
+
   .menu-hero,
   .menu-product-grid,
   .restaurant-stats-grid,

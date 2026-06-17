@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Counter = require("./Counter");
 
 const restaurantOrderItemSchema = new mongoose.Schema(
   {
@@ -63,8 +64,35 @@ const restaurantOrderSchema = new mongoose.Schema(
 restaurantOrderSchema.pre("save", async function setOrderNo() {
   if (this.orderNo) return;
 
-  const count = await mongoose.model("RestaurantOrder").countDocuments();
-  this.orderNo = `DINE-${String(count + 1).padStart(5, "0")}`;
+  const [latestOrder] = await mongoose.model("RestaurantOrder").aggregate([
+    { $match: { orderNo: /^DINE-\d+$/ } },
+    {
+      $project: {
+        sequence: {
+          $toInt: {
+            $arrayElemAt: [{ $split: ["$orderNo", "-"] }, 1],
+          },
+        },
+      },
+    },
+    { $sort: { sequence: -1 } },
+    { $limit: 1 },
+  ]);
+
+  const highestSequence = Number(latestOrder?.sequence || 0);
+  await Counter.updateOne(
+    { _id: "restaurantOrder" },
+    { $max: { seq: highestSequence } },
+    { upsert: true }
+  );
+
+  const counter = await Counter.findByIdAndUpdate(
+    "restaurantOrder",
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+
+  this.orderNo = `DINE-${String(counter.seq).padStart(5, "0")}`;
 });
 
 module.exports = mongoose.model("RestaurantOrder", restaurantOrderSchema);
