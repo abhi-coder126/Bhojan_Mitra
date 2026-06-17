@@ -1,0 +1,269 @@
+const Sale = require("../models/Sale");
+const Product = require("../models/Product");
+const Customer = require("../models/Customer");
+const StockTransaction = require("../models/StockTransaction");
+
+const invoiceNo = () => `INV-${Date.now()}`;
+
+exports.createSale = async (req, res) => {
+  try {
+    const {
+      customerName,
+      customerPhone,
+      customerAddress,
+      customerEmail,
+      customerGST,
+      products,
+      payment,
+      billDiscount,
+      couponCode,
+      couponDiscount,
+      discountReason,
+      totalDiscount,
+    } = req.body;
+
+    if (!customerName || !customerPhone || !customerAddress) {
+      return res.status(400).json({ message: "Customer details required" });
+    }
+
+    if (!products || products.length === 0) {
+      return res.status(400).json({ message: "Products required" });
+    }
+
+    let subTotal = 0;
+    let gstAmount = 0;
+    let discount = 0;
+    let finalProducts = [];
+
+    for (const item of products) {
+      const product = await Product.findById(item.productId);
+
+      if (!product) return res.status(404).json({ message: "Product not found" });
+
+      if (Number(item.qty) > Number(product.stock)) {
+        return res.status(400).json({
+          message: `${product.name} stock not available`,
+        });
+      }
+
+      const qty = Number(item.qty);
+      const rate = Number(item.rate);
+      const itemDiscount = Number(item.discount || 0);
+      const lineAmount = rate * qty;
+      const lineGST = ((lineAmount - itemDiscount) * Number(product.gst || 0)) / 100;
+      const lineTotal = lineAmount - itemDiscount + lineGST;
+
+      subTotal += lineAmount;
+      gstAmount += lineGST;
+      discount += itemDiscount;
+
+      finalProducts.push({
+        productId: product._id, // YE MUST HONA CHAHIYE
+        name: product.name,
+        barcode: product.barcode,
+        qty,
+        unit: item.unit,
+        mrp: product.mrp,
+        rate,
+        gst: product.gst,
+        discount: itemDiscount,
+        total: lineTotal,
+        purchasePrice: product.purchasePrice,
+      });
+
+      const before = Number(product.stock);
+      const after = before - qty;
+
+      product.stock = after;
+      await product.save();
+
+      await StockTransaction.create({
+        productId: product._id,
+        productName: product.name,
+        barcode: product.barcode,
+        type: "OUT",
+        source: "SALE",
+        sourceNo: "PENDING",
+        qty,
+        stockBefore: before,
+        stockAfter: after,
+        customerName,
+      });
+    }
+
+    const billDiscountAmount = Number(billDiscount || 0);
+    const couponDiscountAmount = Number(couponDiscount || 0);
+    const totalDiscountAmount =
+      discount + billDiscountAmount + couponDiscountAmount;
+    const grandTotal = Math.max(subTotal + gstAmount - totalDiscountAmount, 0);
+
+    const cash = Number(payment?.cash || 0);
+    const card = Number(payment?.card || 0);
+    const upi = Number(payment?.upi || 0);
+    const credit = Number(payment?.credit || 0);
+
+    const paidAmount = cash + card + upi;
+    const pendingAmount = Math.max(grandTotal - paidAmount, credit);
+    const count = await Customer.countDocuments();
+    const crn = `CRN_${String(count + 1).padStart(3, "0")}`;
+    let customer = await Customer.findOne({ contact: customerPhone });
+
+    if (!customer) {
+      customer = await Customer.create({
+        crn,
+        name: customerName,
+        contact: customerPhone,
+        address: customerAddress || "",
+        email: customerEmail || "",
+        activeFrom: new Date(),
+      });
+    } else {
+      await customer.save();
+    }
+
+    const sale = await Sale.create({
+      invoiceNo: invoiceNo(),
+      customerId: customer._id,
+      customerName,
+      customerPhone,
+      customerAddress,
+      customerEmail,
+      customerGST,
+      products: finalProducts,
+      subTotal,
+      gstAmount,
+      discount,
+      grandTotal,
+      billDiscount: billDiscountAmount,
+      couponCode: couponCode || "",
+      couponDiscount: couponDiscountAmount,
+      discountReason: discountReason || "",
+      totalDiscount: Number(totalDiscount || totalDiscountAmount || 0),
+      payment: { cash, card, upi, credit: pendingAmount },
+      paidAmount,
+      pendingAmount,
+      paymentStatus: pendingAmount > 0 ? "Partial" : "Paid",
+    });
+
+    await StockTransaction.updateMany(
+      { sourceNo: "PENDING", customerName },
+      { sourceNo: sale.invoiceNo }
+    );
+
+    res.status(201).json({ success: true, sale });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getSales = async (req, res) => {
+  try {
+    const sales = await Sale.find().sort({ createdAt: -1 });
+    res.json({ success: true, sales });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getLatestSale = async (req, res) => {
+  try {
+    const sale = await Sale.findOne().sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      sale,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.deleteSale = async (req, res) => {
+  try {
+    const sale = await Sale.findById(req.params.id);
+
+    if (!sale) {
+      return res.status(404).json({
+        success: false,
+        message: "Invoice not found",
+      });
+    }
+
+    for (const item of sale.products || []) {
+
+      console.log("Deleting Product:", item);
+
+      if (!item.productId) continue;
+
+      const product = await Product.findById(item.productId);
+
+      if (product) {
+        const before = Number(product.stock || 0);
+        const qty = Number(item.qty || 0);
+        const after = before + qty;
+
+        product.stock = after;
+
+        await product.save();
+      }
+    }
+
+    await Sale.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: "Invoice deleted successfully",
+    });
+  } catch (error) {
+    console.log("Invoice delete error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Invoice delete error",
+      error: error.message,
+    });
+  }
+};
+
+exports.clearSales = async (req, res) => {
+  try {
+    const sales = await Sale.find();
+
+    const stockByProduct = new Map();
+    sales.forEach((sale) => {
+      (sale.products || []).forEach((item) => {
+        if (!item.productId) return;
+        const key = String(item.productId);
+        stockByProduct.set(key, (stockByProduct.get(key) || 0) + Number(item.qty || 0));
+      });
+    });
+
+    if (stockByProduct.size > 0) {
+      await Product.bulkWrite(
+        Array.from(stockByProduct.entries()).map(([productId, qty]) => ({
+          updateOne: {
+            filter: { _id: productId },
+            update: { $inc: { stock: qty } },
+          },
+        }))
+      );
+    }
+
+    const result = await Sale.deleteMany({});
+
+    res.json({
+      success: true,
+      deletedCount: result.deletedCount || 0,
+      message: "All POS invoices deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "POS invoices clear error",
+      error: error.message,
+    });
+  }
+};
