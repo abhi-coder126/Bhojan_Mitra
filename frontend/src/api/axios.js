@@ -1,12 +1,10 @@
 import axios from "axios";
 
-const apiHost =
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "localhost"
-    : window.location.hostname;
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "https://bhojan-mitra.onrender.com/api";
 
 const API = axios.create({
-  baseURL: `http://${apiHost}:5000/api`,
+  baseURL: API_BASE_URL,
 });
 
 API.interceptors.request.use((config) => {
