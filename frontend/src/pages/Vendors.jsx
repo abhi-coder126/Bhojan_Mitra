@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import PhoneInput from "../components/PhoneInput";
 
 export default function Vendors() {
   const [vendors, setVendors] = useState([]);
@@ -11,6 +13,7 @@ export default function Vendors() {
     address: "",
     openingBalance: 0,
   });
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchVendors = async () => {
     const res = await API.get("/vendors");
@@ -28,8 +31,10 @@ export default function Vendors() {
     fetchVendors();
   };
 
-  const remove = async (id) => {
-    await API.delete(`/vendors/${id}`);
+  const remove = async (password) => {
+    if (!deleteTarget) return;
+    await API.delete(`/vendors/${deleteTarget._id}`, { data: { password } });
+    setDeleteTarget(null);
     fetchVendors();
   };
 
@@ -44,7 +49,7 @@ export default function Vendors() {
 
       <form className="panel form-grid" onSubmit={submit}>
         <input placeholder="Vendor Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-        <input placeholder="Mobile Number" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+        <PhoneInput placeholder="Mobile number" value={form.phone} onChange={(value) => setForm({ ...form, phone: value })} />
         <input placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         <input placeholder="GST Number" value={form.gstNumber} onChange={(e) => setForm({ ...form, gstNumber: e.target.value })} />
         <input placeholder="Address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
@@ -68,12 +73,19 @@ export default function Vendors() {
                 <td>₹{v.paidAmount}</td>
                 <td>₹{v.pendingAmount}</td>
                 <td>{v.status}</td>
-                <td><button onClick={() => remove(v._id)}>Delete</button></td>
+                <td><button onClick={() => setDeleteTarget(v)}>Delete</button></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <DeleteConfirmModal
+        open={!!deleteTarget}
+        title={`Delete ${deleteTarget?.name || "vendor"}?`}
+        message="Vendor record will be deleted. Enter login password to continue."
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={remove}
+      />
     </div>
   );
 }

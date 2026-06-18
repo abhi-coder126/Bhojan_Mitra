@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import API from "../api/axios";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import PhoneInput from "../components/PhoneInput";
 const emptyCustomer = {
     name: "",
     contact: "",
@@ -17,6 +19,7 @@ export default function Customers() {
     const [history, setHistory] = useState([]);
     const [form, setForm] = useState(emptyCustomer);
     const [currentPage, setCurrentPage] = useState(1);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     const customersPerPage = 20;
 
@@ -80,18 +83,14 @@ export default function Customers() {
         setShowEdit(false);
         fetchCustomers();
     };
-    const deleteCustomer = async (id) => {
-        const confirmDelete = window.confirm(
-            "Are you sure you want to delete this customer?"
-        );
-
-        if (!confirmDelete) return;
-
+    const deleteCustomer = async (password) => {
+        if (!deleteTarget) return;
         try {
-            await API.delete(`/customers/${id}`);
+            await API.delete(`/customers/${deleteTarget._id}`, { data: { password } });
 
             alert("Customer deleted successfully");
             fetchCustomers();
+            setDeleteTarget(null);
 
             if (showInfo) {
                 setShowInfo(false);
@@ -113,7 +112,7 @@ export default function Customers() {
         }));
         const restaurantOrders = (res.data.restaurantOrders || []).map((order) => ({
             ...order,
-            invoiceNo: order.orderNo,
+            invoiceNo: order.invoiceNo || order.orderNo,
             source: "Restaurant",
         }));
         setHistory([...restaurantOrders, ...legacySales]);
@@ -289,7 +288,7 @@ export default function Customers() {
                         <div className="customer-info-actions">
                             <button
                                 className="delete-customer-btn"
-                                onClick={() => deleteCustomer(selectedCustomer._id)}
+                                onClick={() => setDeleteTarget(selectedCustomer)}
                             >
                                 Delete Customer
                             </button>
@@ -330,6 +329,13 @@ export default function Customers() {
                     </div>
                 </CustomerModal>
             )}
+            <DeleteConfirmModal
+                open={!!deleteTarget}
+                title={`Delete ${deleteTarget?.name || "customer"}?`}
+                message="Customer record will be deleted. Enter login password to continue."
+                onCancel={() => setDeleteTarget(null)}
+                onConfirm={deleteCustomer}
+            />
         </div>
     );
 }
@@ -359,10 +365,10 @@ function CustomerForm({ form, setForm, submit, buttonText }) {
                 required
             />
 
-            <input
-                placeholder="Customer Contact Number *"
+            <PhoneInput
+                placeholder="Customer contact number"
                 value={form.contact}
-                onChange={(e) => setForm({ ...form, contact: e.target.value })}
+                onChange={(value) => setForm({ ...form, contact: value })}
                 required
             />
 

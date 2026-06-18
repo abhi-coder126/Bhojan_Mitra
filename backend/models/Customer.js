@@ -13,10 +13,14 @@ const customerSchema = new mongoose.Schema(
     contact: {
       type: String,
       required: true,
+      unique: true,
+      trim: true,
     },
     email: {
       type: String,
       default: "",
+      lowercase: true,
+      trim: true,
     },
     address: {
       type: String,

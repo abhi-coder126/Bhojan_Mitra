@@ -2,7 +2,6 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import Sidebar from "./components/Sidebar";
-import PublicLottie from "./components/PublicLottie";
 import { ToastViewport, useToast } from "./components/Toast";
 
 import Dashboard from "./pages/Dashboard";
@@ -128,8 +127,21 @@ function ScrollToTop() {
 function ProtectedLayout() {
   const token = localStorage.getItem("token");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(() => sessionStorage.getItem("showWelcome") === "1");
+
+  useEffect(() => {
+    if (!showWelcome) return undefined;
+
+    const timer = window.setTimeout(() => {
+      sessionStorage.removeItem("showWelcome");
+      setShowWelcome(false);
+    }, 8600);
+
+    return () => window.clearTimeout(timer);
+  }, [showWelcome]);
 
   if (!token) return <Navigate to="/login" replace />;
+  if (showWelcome) return <WelcomeScreen />;
 
   return (
     <div className={`app-layout ${!sidebarOpen ? "sidebar-closed" : ""}`}>
@@ -174,22 +186,35 @@ function ProtectedLayout() {
   );
 }
 
+function WelcomeScreen() {
+  return (
+    <div className="welcome-screen">
+      <img src="/Welcome.svg" alt="Welcome to BhojanMitra" />
+    </div>
+  );
+}
+
 function GlobalPageLoader() {
   const location = useLocation();
   const [showLoader, setShowLoader] = useState(true);
 
   useEffect(() => {
+    if (sessionStorage.getItem("showWelcome") === "1") {
+      setShowLoader(false);
+      return undefined;
+    }
+
     setShowLoader(true);
-    const timer = window.setTimeout(() => setShowLoader(false), 650);
+    const timer = window.setTimeout(() => setShowLoader(false), 950);
 
     return () => window.clearTimeout(timer);
-  }, [location.pathname]);
+  }, [location.key, location.pathname, location.search]);
 
   if (!showLoader) return null;
 
   return (
     <div className="global-page-loader">
-      <PublicLottie path="/loading.json" className="global-page-loader-animation" />
+      <img src="/loading.svg" alt="Loading" className="global-page-loader-animation" />
     </div>
   );
 }

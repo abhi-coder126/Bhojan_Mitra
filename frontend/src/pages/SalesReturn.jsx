@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
 
 export default function SalesReturn() {
   const [returns, setReturns] = useState([]);
   const [selectedReturn, setSelectedReturn] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const { toast, showToast } = useToast();
 
   const fetchReturns = async () => {
@@ -29,21 +31,16 @@ export default function SalesReturn() {
     });
   };
 
-  const deleteReturn = async () => {
-    if (!selectedReturn) return;
-
-    const ok = window.confirm(
-      `Delete return for invoice ${selectedReturn.invoiceNo}?`
-    );
-
-    if (!ok) return;
+  const deleteReturn = async (password) => {
+    if (!deleteTarget) return;
 
     try {
-      await API.delete(`/sales-return/${selectedReturn._id}`);
+      await API.delete(`/sales-return/${deleteTarget._id}`, { data: { password } });
 
       showToast("Sales return deleted successfully", "success");
 
       setSelectedReturn(null);
+      setDeleteTarget(null);
       fetchReturns();
     } catch (error) {
       showToast(error.response?.data?.message || "Sales return delete failed");
@@ -173,12 +170,19 @@ export default function SalesReturn() {
               </tbody>
             </table>
 
-            <button className="delete-sales-return-btn" onClick={deleteReturn}>
+            <button className="delete-sales-return-btn" onClick={() => setDeleteTarget(selectedReturn)}>
               Delete Sales Return
             </button>
           </div>
         </div>
       )}
+      <DeleteConfirmModal
+        open={!!deleteTarget}
+        title={`Delete return ${deleteTarget?.returnNo || ""}?`}
+        message="Return stock reversal will be applied. Enter login password to continue."
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteReturn}
+      />
     </div>
   );
 }

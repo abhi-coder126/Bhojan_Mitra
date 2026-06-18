@@ -26,9 +26,12 @@ exports.registerAdmin = async (req, res) => {
 
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const email = String(req.body.email || "").trim().toLowerCase();
+    const { password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email })
+      .select("name email password role")
+      .lean();
     if (!user) return res.status(400).json({ message: "Invalid email" });
 
     const match = await bcrypt.compare(password, user.password);

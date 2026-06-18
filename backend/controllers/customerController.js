@@ -1,6 +1,8 @@
 const Customer = require("../models/Customer");
 const Sale = require("../models/Sale");
 const RestaurantOrder = require("../models/RestaurantOrder");
+const DeletionLog = require("../models/DeletionLog");
+const { verifyDeletePassword } = require("../utils/deleteAuth");
 
 const generateCRN = async () => {
   const lastCustomer = await Customer.findOne().sort({ createdAt: -1 });
@@ -17,7 +19,9 @@ const generateCRN = async () => {
 
 exports.createCustomer = async (req, res) => {
   try {
-    const { name, contact, email, address } = req.body;
+    const { name, address } = req.body;
+    const contact = String(req.body.contact || "").trim();
+    const email = String(req.body.email || "").trim().toLowerCase();
 
     if (!name || !contact) {
       return res.status(400).json({
@@ -26,12 +30,20 @@ exports.createCustomer = async (req, res) => {
       });
     }
 
-    const existing = await Customer.findOne({ contact });
+    const existing = await Customer.findOne({
+      $or: [{ contact }, ...(email ? [{ email }] : [])],
+    }).sort({ createdAt: 1 });
 
     if (existing) {
-      return res.status(400).json({
+      existing.name = name || existing.name;
+      existing.contact = existing.contact || contact;
+      existing.email = email || existing.email || "";
+      existing.address = address || existing.address || "";
+      await existing.save();
+      return res.json({
         success: false,
-        message: "Customer already exists with this contact number",
+        message: "Customer already exists. Existing CRN updated.",
+        customer: existing,
       });
     }
 
@@ -52,7 +64,7 @@ exports.createCustomer = async (req, res) => {
       customer,
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
       message: "Customer create error",
       error: error.message,
@@ -79,7 +91,13 @@ exports.getCustomers = async (req, res) => {
 
 exports.updateCustomer = async (req, res) => {
   try {
-    const { name, contact, email, address } = req.body;
+    const { name, address } = req.body;
+    const contact = String(req.body.contact || "").trim();
+    const email = String(req.body.email || "").trim().toLowerCase();
+
+    if (!contact) {
+      return res.status(400).json({ success: false, message: "Contact number required" });
+    }
 
     const customer = await Customer.findByIdAndUpdate(
       req.params.id,
@@ -142,7 +160,18 @@ exports.getCustomerHistory = async (req, res) => {
 };
 exports.deleteCustomer = async (req, res) => {
   try {
+    const user = await verifyDeletePassword(req);
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) return res.status(404).json({ success: false, message: "Customer not found" });
+
     await Customer.findByIdAndDelete(req.params.id);
+    await DeletionLog.create({
+      recordType: "Customer",
+      recordNo: customer.crn,
+      title: customer.name,
+      deletedBy: user.name,
+      details: customer.contact,
+    });
 
     res.json({
       success: true,

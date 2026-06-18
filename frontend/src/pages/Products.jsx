@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Eye, Flame, ImagePlus, Leaf, Pencil, Sparkles, Trash2, Utensils } from "lucide-react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
 
 const emptyForm = {
   name: "",
@@ -32,6 +33,7 @@ export default function Products() {
   const [showEdit, setShowEdit] = useState(false);
   const [showView, setShowView] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const { toast, showToast } = useToast();
 
   const fetchItems = async () => {
@@ -132,16 +134,15 @@ export default function Products() {
     }
   };
 
-  const deleteItem = async () => {
-    if (!selectedItem) return;
-    const ok = window.confirm(`Delete ${selectedItem.name}?`);
-    if (!ok) return;
+  const deleteItem = async (password) => {
+    if (!deleteTarget) return;
 
     try {
-      await API.delete(`/products/${selectedItem._id}`);
+      await API.delete(`/products/${deleteTarget._id}`, { data: { password } });
       showToast("Menu item deleted", "success");
       setShowView(false);
       setSelectedItem(null);
+      setDeleteTarget(null);
       fetchItems();
     } catch (error) {
       showToast(error.response?.data?.message || "Menu item delete failed");
@@ -301,7 +302,7 @@ export default function Products() {
                 }}>
                   Edit Item
                 </button>
-                <button className="delete-product-btn" onClick={deleteItem}>
+                <button className="delete-product-btn" onClick={() => setDeleteTarget(selectedItem)}>
                   <Trash2 size={16} />
                   Delete
                 </button>
@@ -310,6 +311,14 @@ export default function Products() {
           </div>
         </MenuItemModal>
       )}
+
+      <DeleteConfirmModal
+        open={!!deleteTarget}
+        title={`Delete ${deleteTarget?.name || "menu item"}?`}
+        message="Menu item will be deleted. Enter login password to continue."
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={deleteItem}
+      />
     </div>
   );
 }

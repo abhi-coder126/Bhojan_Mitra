@@ -2,8 +2,21 @@ const Sale = require("../models/Sale");
 const Product = require("../models/Product");
 const Customer = require("../models/Customer");
 const StockTransaction = require("../models/StockTransaction");
+const Counter = require("../models/Counter");
+const DeletionLog = require("../models/DeletionLog");
+const { verifyDeletePassword } = require("../utils/deleteAuth");
 
-const invoiceNo = () => `INV-${Date.now()}`;
+const invoiceNo = async () => {
+  const counter = await Counter.findByIdAndUpdate(
+    "invoice",
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+  return `INV-${counter.seq}`;
+};
+
+const normalizeContact = (value) => String(value || "").trim();
+const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
 
 exports.createSale = async (req, res) => {
   try {
@@ -104,25 +117,33 @@ exports.createSale = async (req, res) => {
 
     const paidAmount = cash + card + upi;
     const pendingAmount = Math.max(grandTotal - paidAmount, credit);
+    const contact = normalizeContact(customerPhone);
+    const email = normalizeEmail(customerEmail);
     const count = await Customer.countDocuments();
     const crn = `CRN_${String(count + 1).padStart(3, "0")}`;
-    let customer = await Customer.findOne({ contact: customerPhone });
+    let customer = await Customer.findOne({
+      $or: [{ contact }, ...(email ? [{ email }] : [])],
+    }).sort({ createdAt: 1 });
 
     if (!customer) {
       customer = await Customer.create({
         crn,
         name: customerName,
-        contact: customerPhone,
+        contact,
         address: customerAddress || "",
-        email: customerEmail || "",
+        email,
         activeFrom: new Date(),
       });
     } else {
+      customer.name = customerName || customer.name;
+      customer.contact = customer.contact || contact;
+      customer.address = customerAddress || customer.address || "";
+      customer.email = email || customer.email || "";
       await customer.save();
     }
 
     const sale = await Sale.create({
-      invoiceNo: invoiceNo(),
+      invoiceNo: await invoiceNo(),
       customerId: customer._id,
       customerName,
       customerPhone,
@@ -183,6 +204,7 @@ exports.getLatestSale = async (req, res) => {
 
 exports.deleteSale = async (req, res) => {
   try {
+    const user = await verifyDeletePassword(req);
     const sale = await Sale.findById(req.params.id);
 
     if (!sale) {
@@ -212,6 +234,13 @@ exports.deleteSale = async (req, res) => {
     }
 
     await Sale.findByIdAndDelete(req.params.id);
+    await DeletionLog.create({
+      recordType: "POS Invoice",
+      recordNo: sale.invoiceNo,
+      title: sale.customerName || "Counter sale",
+      deletedBy: user.name,
+      details: `Rs ${Number(sale.grandTotal || 0).toFixed(2)}`,
+    });
 
     res.json({
       success: true,
@@ -220,7 +249,7 @@ exports.deleteSale = async (req, res) => {
   } catch (error) {
     console.log("Invoice delete error:", error);
 
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
       message: "Invoice delete error",
       error: error.message,
@@ -230,6 +259,7 @@ exports.deleteSale = async (req, res) => {
 
 exports.clearSales = async (req, res) => {
   try {
+    const user = await verifyDeletePassword(req);
     const sales = await Sale.find();
 
     const stockByProduct = new Map();
@@ -253,6 +283,13 @@ exports.clearSales = async (req, res) => {
     }
 
     const result = await Sale.deleteMany({});
+    await DeletionLog.create({
+      recordType: "POS Invoices",
+      recordNo: "Bulk delete",
+      title: "All POS invoices",
+      deletedBy: user.name,
+      details: `${result.deletedCount || 0} records deleted`,
+    });
 
     res.json({
       success: true,
@@ -260,7 +297,7 @@ exports.clearSales = async (req, res) => {
       message: "All POS invoices deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
       message: "POS invoices clear error",
       error: error.message,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, RotateCcw } from "lucide-react";
 import API from "../api/axios";
+import PhoneInput from "../components/PhoneInput";
 
 const CODE128_PATTERNS = [
   "11011001100", "11001101100", "11001100110", "10010011000", "10010001100",
@@ -1087,12 +1088,11 @@ export default function BillingPOS() {
                 }
               />
 
-              <input
-                placeholder="Mobile Number *"
+              <PhoneInput
+                placeholder="Mobile number"
                 value={customer.customerPhone}
-                onChange={(e) =>
-                  setCustomer({ ...customer, customerPhone: e.target.value })
-                }
+                onChange={(value) => setCustomer({ ...customer, customerPhone: value })}
+                required
               />
 
               <input

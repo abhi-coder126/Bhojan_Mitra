@@ -1,4 +1,6 @@
 const Product = require("../models/Product");
+const DeletionLog = require("../models/DeletionLog");
+const { verifyDeletePassword } = require("../utils/deleteAuth");
 
 exports.createProduct = async (req, res) => {
   try {
@@ -83,22 +85,41 @@ exports.updateProduct = async (req, res) => {
 
 exports.deleteProduct = async (req, res) => {
   try {
+    const user = await verifyDeletePassword(req);
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: "Menu item not found" });
+
     await Product.findByIdAndDelete(req.params.id);
+    await DeletionLog.create({
+      recordType: "Menu Item",
+      recordNo: product.barcode,
+      title: product.name,
+      deletedBy: user.name,
+      details: product.category || "",
+    });
     res.json({ success: true, message: "Product deleted" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
 exports.clearProducts = async (req, res) => {
   try {
+    const user = await verifyDeletePassword(req);
     const result = await Product.deleteMany({});
+    await DeletionLog.create({
+      recordType: "Menu Items",
+      recordNo: "Bulk delete",
+      title: "All menu items",
+      deletedBy: user.name,
+      details: `${result.deletedCount || 0} records deleted`,
+    });
     res.json({
       success: true,
       deletedCount: result.deletedCount || 0,
       message: "All menu items deleted",
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };

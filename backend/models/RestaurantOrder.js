@@ -19,6 +19,7 @@ const restaurantOrderItemSchema = new mongoose.Schema(
 const restaurantOrderSchema = new mongoose.Schema(
   {
     orderNo: { type: String, unique: true },
+    invoiceNo: { type: String, unique: true, sparse: true },
     orderType: {
       type: String,
       enum: ["dine-in", "delivery"],

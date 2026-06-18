@@ -61,11 +61,140 @@
   }
 
   .global-page-loader {
-    @apply fixed inset-0 z-[999998] grid place-items-center bg-white/90 backdrop-blur-sm;
+    @apply fixed inset-0 z-[999998] grid place-items-center bg-white/95 backdrop-blur-md;
   }
 
   .global-page-loader-animation {
-    @apply h-36 w-36;
+    @apply h-[min(360px,62vw)] w-[min(360px,62vw)] object-contain;
+  }
+
+  .phone-input-wrap {
+    @apply grid h-[52px] grid-cols-[auto_1fr] items-center overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm transition focus-within:border-red-500 focus-within:ring-4 focus-within:ring-red-600/10;
+  }
+
+  .phone-country-chip {
+    @apply flex h-full items-center gap-2 border-r border-slate-200 bg-slate-50 px-3 text-sm font-black text-slate-800;
+  }
+
+  .india-flag {
+    @apply grid h-[15px] w-[22px] overflow-hidden rounded-[3px] border border-slate-200 bg-white shadow-sm;
+  }
+
+  .india-flag i {
+    @apply block h-[5px] w-full;
+  }
+
+  .india-flag i:nth-child(1) {
+    @apply bg-[#ff9933];
+  }
+
+  .india-flag i:nth-child(2) {
+    @apply bg-white;
+  }
+
+  .india-flag i:nth-child(3) {
+    @apply bg-[#138808];
+  }
+
+  .phone-input-wrap input {
+    @apply h-full rounded-none border-0 bg-white px-3 py-0 font-semibold tracking-[0.02em] text-slate-900 shadow-none focus:border-0 focus:ring-0;
+  }
+
+  .delete-confirm-overlay {
+    @apply fixed inset-0 z-[999999] grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm;
+  }
+
+  .delete-confirm-modal {
+    @apply relative grid w-[min(440px,94vw)] gap-4 rounded-2xl bg-white p-6 text-center shadow-[0_28px_90px_rgba(15,23,42,0.32)];
+  }
+
+  .delete-confirm-close {
+    @apply absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-xl bg-slate-100 p-0 text-slate-700 hover:!bg-slate-200;
+  }
+
+  .delete-confirm-icon {
+    @apply mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-red-50 text-red-600;
+  }
+
+  .delete-confirm-modal h2 {
+    @apply m-0 text-2xl font-black text-slate-950;
+  }
+
+  .delete-confirm-modal p {
+    @apply mx-auto m-0 max-w-sm text-sm font-semibold leading-6 text-slate-600;
+  }
+
+  .delete-password-field {
+    @apply grid gap-2 text-left;
+  }
+
+  .delete-password-field > span {
+    @apply text-sm font-black text-slate-700;
+  }
+
+  .delete-password-field > div {
+    @apply grid h-12 grid-cols-[auto_1fr] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 focus-within:border-red-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-red-500/10;
+  }
+
+  .delete-password-field svg {
+    @apply text-slate-400;
+  }
+
+  .delete-password-field input {
+    @apply h-full border-0 bg-transparent px-0 py-0 font-semibold focus:border-0 focus:ring-0;
+  }
+
+  .delete-confirm-actions {
+    @apply grid grid-cols-2 gap-3;
+  }
+
+  .delete-confirm-actions button {
+    @apply h-12 rounded-xl;
+  }
+
+  .confirm-action-overlay {
+    @apply fixed inset-0 z-[999999] grid place-items-center bg-slate-950/65 p-4 backdrop-blur-sm;
+  }
+
+  .confirm-action-modal {
+    @apply relative grid w-[min(420px,94vw)] gap-4 rounded-2xl bg-white p-6 text-center shadow-[0_28px_90px_rgba(15,23,42,0.3)];
+  }
+
+  .confirm-action-close {
+    @apply absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-xl bg-slate-100 p-0 text-slate-700 hover:!bg-slate-200;
+  }
+
+  .confirm-action-icon {
+    @apply mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-amber-50 text-amber-600;
+  }
+
+  .confirm-action-modal h2 {
+    @apply m-0 text-2xl font-black text-slate-950;
+  }
+
+  .confirm-action-modal p {
+    @apply mx-auto m-0 max-w-sm text-sm font-semibold leading-6 text-slate-600;
+  }
+
+  .confirm-action-buttons {
+    @apply grid grid-cols-2 gap-3;
+  }
+
+  .confirm-action-buttons button {
+    @apply h-12 rounded-xl bg-slate-100 font-black text-slate-700 hover:!bg-slate-200;
+  }
+
+  .confirm-action-buttons .confirm-action-primary {
+    @apply !bg-red-600 text-white hover:!bg-red-700;
+  }
+
+  .welcome-screen {
+    @apply fixed inset-0 z-[999999] grid place-items-center bg-white;
+  }
+
+  .welcome-screen img {
+    @apply h-[min(420px,72vh)] w-[min(560px,86vw)] object-contain;
+    animation: welcomePop 8.6s ease both;
   }
 
   .hidden-scrollbar,
@@ -1414,11 +1543,145 @@
   }
 
   .login-page {
-    @apply grid min-h-screen place-items-center bg-gradient-to-br from-blue-50 to-violet-50;
+    @apply grid min-h-screen grid-cols-[minmax(0,1fr)_minmax(360px,460px)] items-start gap-10 overflow-hidden bg-[#fff8f3] px-6 py-4;
+    background:
+      radial-gradient(circle at 16% 14%, rgba(248, 113, 113, 0.18), transparent 30%),
+      radial-gradient(circle at 86% 74%, rgba(251, 146, 60, 0.16), transparent 32%),
+      linear-gradient(135deg, #fff8f3 0%, #fff 42%, #fff1f2 100%);
+  }
+
+  .login-showcase {
+    @apply relative mx-auto grid w-full max-w-[760px] gap-8 rounded-[28px] border border-white/70 bg-white/55 p-8 shadow-[0_24px_70px_rgba(127,6,21,0.13)] backdrop-blur-xl;
+  }
+
+  .login-showcase::before {
+    @apply absolute inset-x-8 top-0 h-1 rounded-full bg-[linear-gradient(90deg,#7f0615,#dc2626,#f97316)];
+    content: "";
+  }
+
+  .login-brand-lockup {
+    @apply flex flex-wrap items-center gap-4;
+  }
+
+  .login-brand-lockup img {
+    @apply h-20 w-auto rounded-2xl bg-[#2a080d] object-contain px-4 py-3 shadow-[0_14px_34px_rgba(127,6,21,0.18)];
+  }
+
+  .login-brand-lockup span {
+    @apply rounded-full border border-red-100 bg-white px-4 py-2 text-sm font-black uppercase tracking-[0.08em] text-red-700 shadow-sm;
+  }
+
+  .login-showcase-copy {
+    @apply grid max-w-[620px] gap-4;
+  }
+
+  .login-showcase-copy h1 {
+    @apply text-[44px] font-black leading-[1.04] text-slate-950;
+  }
+
+  .login-showcase-copy p {
+    @apply max-w-[560px] text-lg font-semibold leading-8 text-slate-600;
+  }
+
+  .login-feature-grid {
+    @apply grid grid-cols-3 gap-3;
+  }
+
+  .login-feature-grid div {
+    @apply grid gap-3 rounded-2xl border border-red-100 bg-white p-4 shadow-[0_12px_30px_rgba(15,23,42,0.06)];
+  }
+
+  .login-feature-grid svg {
+    @apply text-red-600;
+  }
+
+  .login-feature-grid span {
+    @apply text-sm font-black text-slate-800;
   }
 
   .login-card {
-    @apply grid w-[min(420px,calc(100vw-32px))] gap-3.5 rounded-2xl bg-white p-6 shadow-[0_20px_60px_rgba(15,23,42,0.15)] sm:p-8;
+    @apply relative z-10 grid w-full max-w-[440px] gap-5 rounded-[24px] border border-white bg-white p-6 shadow-[0_28px_80px_rgba(127,6,21,0.16)] sm:p-8;
+  }
+
+  .login-card-head {
+    @apply grid justify-items-start gap-2;
+  }
+
+  .login-card-head img {
+    @apply mb-2 h-16 w-auto rounded-2xl bg-[#2a080d] object-contain px-3 py-2 shadow-[0_12px_28px_rgba(127,6,21,0.16)];
+  }
+
+  .login-card-head span {
+    @apply rounded-full bg-red-50 px-3 py-1 text-xs font-black uppercase tracking-[0.08em] text-red-700;
+  }
+
+  .login-card-head h2 {
+    @apply m-0 text-[28px] font-black leading-tight text-slate-950;
+  }
+
+  .login-card-head p {
+    @apply m-0 text-sm font-semibold text-slate-500;
+  }
+
+  .login-field {
+    @apply grid gap-2;
+  }
+
+  .login-field > span {
+    @apply text-sm font-black text-slate-700;
+  }
+
+  .login-field > div {
+    @apply grid h-[54px] grid-cols-[auto_1fr] items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 transition focus-within:border-red-400 focus-within:bg-white focus-within:ring-4 focus-within:ring-red-500/10;
+  }
+
+  .login-password-field > div {
+    @apply grid-cols-[auto_1fr_auto] pr-2;
+  }
+
+  .login-field svg {
+    @apply text-slate-400;
+  }
+
+  .login-field input {
+    @apply h-full border-0 bg-transparent px-0 py-0 text-[15px] font-semibold text-slate-900 placeholder:text-slate-400 focus:border-0 focus:ring-0 disabled:opacity-70;
+  }
+
+  .login-password-toggle {
+    @apply grid h-10 w-10 place-items-center rounded-xl bg-transparent p-0 text-slate-500 shadow-none hover:!bg-red-50 hover:text-red-600 disabled:bg-transparent;
+  }
+
+  .login-password-toggle svg {
+    @apply text-current;
+  }
+
+  .login-error-card {
+    @apply grid min-h-[96px] grid-cols-[74px_1fr] items-center gap-3 rounded-2xl border border-red-100 bg-red-50/80 p-3;
+  }
+
+  .login-error-card img {
+    @apply h-[68px] w-[68px] object-contain;
+  }
+
+  .login-error-card strong {
+    @apply block text-sm font-black text-red-700;
+  }
+
+  .login-error-card p {
+    @apply m-0 mt-1 text-xs font-bold leading-5 text-slate-600;
+  }
+
+  .login-submit {
+    @apply mt-1 inline-flex h-[54px] items-center justify-center gap-2 rounded-2xl bg-red-600 text-base font-black shadow-[0_14px_32px_rgba(220,38,38,0.28)] hover:bg-red-700 disabled:bg-red-400;
+  }
+
+  .login-spinner {
+    @apply h-5 w-5 rounded-full border-2 border-white/50 border-t-white;
+    animation: spin 0.75s linear infinite;
+  }
+
+  .login-secure-note {
+    @apply m-0 flex items-center justify-center gap-2 rounded-2xl bg-slate-50 px-3 py-3 text-sm font-bold text-slate-500;
   }
 
   .inventory-page {
@@ -2849,8 +3112,93 @@
     @apply bg-[linear-gradient(135deg,#101828,#0f766e_58%,#22c55e)];
   }
 
+  .restaurant-dashboard-filters {
+    @apply sticky top-3 z-20 grid grid-cols-[220px_auto_auto_auto] items-end gap-3;
+  }
+
+  .restaurant-dashboard-filters label {
+    @apply grid gap-1.5;
+  }
+
+  .restaurant-dashboard-filters label span {
+    @apply text-xs font-black uppercase tracking-[0.06em] text-slate-500;
+  }
+
+  .restaurant-dashboard-filters select,
+  .restaurant-dashboard-filters input {
+    @apply h-11 rounded-xl bg-slate-50 py-2.5;
+  }
+
+  .dashboard-filter-tabs {
+    @apply flex flex-wrap gap-2;
+  }
+
+  .dashboard-filter-tabs button {
+    @apply h-11 rounded-xl bg-slate-100 px-4 py-2 text-sm font-black text-slate-700 hover:bg-red-50 hover:text-red-700;
+  }
+
   .restaurant-kpi-grid {
+    @apply grid-cols-6;
+  }
+
+  .restaurant-metric-grid {
+    @apply grid-cols-5;
+  }
+
+  .restaurant-metric-grid .dashboard-stat-card h2 {
+    @apply text-[20px];
+  }
+
+  .restaurant-chart-grid {
     @apply grid-cols-4;
+  }
+
+  .restaurant-dashboard-summary {
+    @apply grid-cols-3;
+  }
+
+  .restaurant-wide-chart {
+    @apply mb-4;
+  }
+
+  .dashboard-delete-notices {
+    @apply mb-4;
+  }
+
+  .delete-notice-list {
+    @apply grid gap-2;
+  }
+
+  .delete-notice-list div {
+    @apply rounded-2xl border border-red-100 bg-red-50/60 p-3;
+  }
+
+  .delete-notice-list span {
+    @apply block text-xs font-black uppercase tracking-[0.05em] text-red-600;
+  }
+
+  .delete-notice-list b {
+    @apply mt-1 block text-sm font-black text-slate-950;
+  }
+
+  .delete-notice-list p {
+    @apply m-0 mt-1 text-sm font-semibold text-slate-600;
+  }
+
+  .restaurant-invoice-table-card {
+    @apply overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-[0_12px_32px_rgba(15,23,42,0.07)];
+  }
+
+  .payment-mode-grid {
+    @apply grid grid-cols-2 gap-3;
+  }
+
+  .payment-mode-btn {
+    @apply flex h-14 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 text-sm font-black text-slate-700 shadow-none hover:!bg-red-50 hover:text-red-700;
+  }
+
+  .payment-mode-btn.active {
+    @apply border-red-600 !bg-red-600 text-white hover:!bg-red-600 hover:text-white;
   }
 
   .restaurant-live-list {
@@ -3538,6 +3886,24 @@
   }
 }
 
+@keyframes welcomePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+
+  8%,
+  94% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}
+
 /* BhojanMitra red/white theme overrides */
 @layer components {
   body {
@@ -3663,6 +4029,29 @@
 }
 
 @media (max-width: 1100px) {
+  .restaurant-dashboard-filters,
+  .restaurant-chart-grid,
+  .restaurant-dashboard-summary {
+    @apply grid-cols-1;
+  }
+
+  .restaurant-kpi-grid,
+  .restaurant-metric-grid {
+    @apply grid-cols-2;
+  }
+
+  .login-page {
+    @apply grid-cols-1 gap-6 overflow-auto;
+  }
+
+  .login-showcase {
+    @apply max-w-[720px];
+  }
+
+  .login-card {
+    @apply mx-auto max-w-[520px];
+  }
+
   .pos-topbar {
     @apply grid-cols-[auto_1fr] items-center;
   }
@@ -3703,6 +4092,49 @@
 }
 
 @media (max-width: 640px) {
+  .restaurant-kpi-grid,
+  .restaurant-metric-grid {
+    @apply grid-cols-1;
+  }
+
+  .dashboard-filter-tabs {
+    @apply grid w-full grid-cols-2;
+  }
+
+  .dashboard-filter-tabs button,
+  .restaurant-dashboard-filters input,
+  .restaurant-dashboard-filters select {
+    @apply w-full;
+  }
+
+  .login-page {
+    @apply px-4 py-5;
+  }
+
+  .login-showcase {
+    @apply gap-5 rounded-[22px] p-5;
+  }
+
+  .login-brand-lockup img {
+    @apply h-16;
+  }
+
+  .login-showcase-copy h1 {
+    @apply text-[31px];
+  }
+
+  .login-showcase-copy p {
+    @apply text-base leading-7;
+  }
+
+  .login-feature-grid {
+    @apply grid-cols-1;
+  }
+
+  .login-card {
+    @apply rounded-[22px] p-5;
+  }
+
   .pos-topbar {
     @apply grid-cols-1;
   }

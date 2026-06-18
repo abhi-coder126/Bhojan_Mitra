@@ -1,4 +1,6 @@
 const Coupon = require("../models/Coupon");
+const DeletionLog = require("../models/DeletionLog");
+const { verifyDeletePassword } = require("../utils/deleteAuth");
 
 exports.createCoupon = async (req, res) => {
   try {
@@ -121,14 +123,25 @@ exports.applyCoupon = async (req, res) => {
 
 exports.deleteCoupon = async (req, res) => {
   try {
+    const user = await verifyDeletePassword(req);
+    const coupon = await Coupon.findById(req.params.id);
+    if (!coupon) return res.status(404).json({ success: false, message: "Coupon not found" });
+
     await Coupon.findByIdAndDelete(req.params.id);
+    await DeletionLog.create({
+      recordType: "Coupon",
+      recordNo: coupon.code,
+      title: coupon.discountType,
+      deletedBy: user.name,
+      details: String(coupon.discountValue || ""),
+    });
 
     res.json({
       success: true,
       message: "Coupon deleted successfully",
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
       message: "Coupon delete error",
       error: error.message,

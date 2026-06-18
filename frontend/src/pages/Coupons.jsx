@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
 
 const emptyCoupon = {
   code: "",
@@ -15,6 +16,7 @@ const emptyCoupon = {
 export default function Coupons() {
   const [coupons, setCoupons] = useState([]);
   const [form, setForm] = useState(emptyCoupon);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchCoupons = async () => {
     const res = await API.get("/coupons");
@@ -38,10 +40,11 @@ export default function Coupons() {
     }
   };
 
-  const remove = async (id) => {
-    if (!window.confirm("Delete this coupon?")) return;
+  const remove = async (password) => {
+    if (!deleteTarget) return;
 
-    await API.delete(`/coupons/${id}`);
+    await API.delete(`/coupons/${deleteTarget._id}`, { data: { password } });
+    setDeleteTarget(null);
     fetchCoupons();
   };
 
@@ -146,7 +149,7 @@ export default function Coupons() {
                   <td>{c.usedCount || 0}/{c.usageLimit || "Unlimited"}</td>
                   <td>{c.status}</td>
                   <td>
-                    <button onClick={() => remove(c._id)}>Delete</button>
+                    <button onClick={() => setDeleteTarget(c)}>Delete</button>
                   </td>
                 </tr>
               ))
@@ -154,6 +157,13 @@ export default function Coupons() {
           </tbody>
         </table>
       </div>
+      <DeleteConfirmModal
+        open={!!deleteTarget}
+        title={`Delete coupon ${deleteTarget?.code || ""}?`}
+        message="Coupon will be deleted. Enter login password to continue."
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={remove}
+      />
     </div>
   );
 }

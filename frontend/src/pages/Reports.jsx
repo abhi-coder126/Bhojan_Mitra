@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Info, Search, Trash2 } from "lucide-react";
 import API from "../api/axios";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
 
 export default function Reports() {
   const [sales, setSales] = useState([]);
   const [restaurantOrders, setRestaurantOrders] = useState([]);
   const [search, setSearch] = useState("");
   const [selectedReport, setSelectedReport] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const fetchReports = async () => {
     const [saleRes, orderRes] = await Promise.all([
@@ -22,14 +24,18 @@ export default function Reports() {
   }, []);
 
   const deleteReport = async (row) => {
-    const label = row.reportType === "restaurant" ? "restaurant invoice/order" : "POS invoice";
-    const ok = window.confirm(`Delete ${label} ${row.reportNo}? Stock will be restored for its items.`);
-    if (!ok) return;
+    setDeleteTarget(row);
+  };
 
-    await API.delete(row.reportType === "restaurant" ? `/restaurant-orders/${row._id}` : `/sales/${row._id}`);
+  const confirmDeleteReport = async (password) => {
+    const row = deleteTarget;
+    await API.delete(row.reportType === "restaurant" ? `/restaurant-orders/${row._id}` : `/sales/${row._id}`, {
+      data: { password },
+    });
     if (selectedReport?._id === row._id) {
       setSelectedReport(null);
     }
+    setDeleteTarget(null);
     fetchReports();
   };
 
@@ -62,7 +68,7 @@ export default function Reports() {
     const orderRows = restaurantOrders.map((order) => ({
       ...order,
       reportType: "restaurant",
-      reportNo: order.orderNo,
+      reportNo: order.invoiceNo || order.orderNo,
       customer: order.customerName || "Customer",
       phone: order.customerPhone || "",
       title: order.orderType === "delivery" ? "Delivery" : `Table ${order.tableNo}`,
@@ -112,7 +118,7 @@ export default function Reports() {
         <table>
           <thead>
             <tr>
-              <th>Order / Invoice</th>
+              <th>Invoice No</th>
               <th>Date</th>
               <th>Customer</th>
               <th>Name</th>
@@ -207,6 +213,14 @@ export default function Reports() {
           </div>
         </div>
       )}
+
+      <DeleteConfirmModal
+        open={!!deleteTarget}
+        title={`Delete ${deleteTarget?.reportNo || "record"}?`}
+        message="Stock will be restored for its items. Enter login password to continue."
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteReport}
+      />
     </div>
   );
 }

@@ -2,6 +2,8 @@ const Sale = require("../models/Sale");
 const Product = require("../models/Product");
 const SalesReturn = require("../models/SalesReturn");
 const StockTransaction = require("../models/StockTransaction");
+const DeletionLog = require("../models/DeletionLog");
+const { verifyDeletePassword } = require("../utils/deleteAuth");
 
 exports.getSalesReturns = async (req, res) => {
   try {
@@ -22,6 +24,7 @@ exports.getSalesReturns = async (req, res) => {
 
 exports.deleteSalesReturn = async (req, res) => {
   try {
+    const user = await verifyDeletePassword(req);
     const salesReturn = await SalesReturn.findById(req.params.id);
 
     if (!salesReturn) {
@@ -67,6 +70,13 @@ exports.deleteSalesReturn = async (req, res) => {
     }
 
     await SalesReturn.findByIdAndDelete(req.params.id);
+    await DeletionLog.create({
+      recordType: "Sales Return",
+      recordNo: salesReturn.returnNo || salesReturn.invoiceNo,
+      title: salesReturn.customerName || "",
+      deletedBy: user.name,
+      details: `Invoice ${salesReturn.invoiceNo} | Rs ${Number(salesReturn.returnAmount || 0).toFixed(2)}`,
+    });
 
     res.json({
       success: true,
@@ -123,7 +133,7 @@ exports.getInvoiceForReturn = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
       message: "Invoice fetch for return failed",
       error: error.message,

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { BadgePercent, CheckCircle2, ChefHat, Clock, Flame, Leaf, Minus, PackageCheck, Plus, Search, ShoppingBag, Sparkles, Utensils } from "lucide-react";
 import { useParams } from "react-router-dom";
 import API from "../api/axios";
+import PhoneInput from "../components/PhoneInput";
 import PublicLottie from "../components/PublicLottie";
 import { ToastViewport, useToast } from "../components/Toast";
 
@@ -512,10 +513,11 @@ export default function CustomerMenu() {
                 value={customer.customerName}
                 onChange={(e) => setCustomer({ ...customer, customerName: e.target.value })}
               />
-              <input
-                placeholder="Contact number *"
+              <PhoneInput
+                placeholder="Contact number"
                 value={customer.customerPhone}
-                onChange={(e) => setCustomer({ ...customer, customerPhone: e.target.value })}
+                onChange={(value) => setCustomer({ ...customer, customerPhone: value })}
+                required
               />
               <input
                 placeholder={isDelivery ? "Email *" : "Email optional"}

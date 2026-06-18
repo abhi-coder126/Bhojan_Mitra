@@ -4,6 +4,7 @@ const Vendor = require("../models/Vendor");
 const Product = require("../models/Product");
 const Customer = require("../models/Customer");
 const SalesReturn = require("../models/SalesReturn");
+const DeletionLog = require("../models/DeletionLog");
 
 const getDateRange = (filter, startDate, endDate) => {
   const now = new Date();
@@ -232,5 +233,14 @@ exports.getDashboard = async (req, res) => {
       message: "Dashboard error",
       error: error.message,
     });
+  }
+};
+
+exports.getDeletionLogs = async (req, res) => {
+  try {
+    const logs = await DeletionLog.find().sort({ createdAt: -1 }).limit(20);
+    res.json({ success: true, logs });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };

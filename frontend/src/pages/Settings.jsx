@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import PhoneInput from "../components/PhoneInput";
 
 const defaultSettings = {
   storeName: "",
@@ -45,6 +47,7 @@ const defaultSettings = {
 export default function Settings() {
   const [settings, setSettings] = useState(defaultSettings);
   const [loading, setLoading] = useState(false);
+  const [cleanupTarget, setCleanupTarget] = useState(null);
 
   const fetchSettings = async () => {
     try {
@@ -145,19 +148,28 @@ export default function Settings() {
     };
 
     const target = cleanupMap[type];
-    const typed = window.prompt(`Type DELETE to remove ${target.label}. This cannot be undone.`);
-    if (typed !== "DELETE") return;
+    setCleanupTarget({ type, ...target });
+  };
+
+  const confirmCleanup = async (password) => {
+    const type = cleanupTarget.type;
+    const cleanupMap = {
+      restaurant: { endpoint: "/restaurant-orders/clear/all" },
+      pos: { endpoint: "/sales/clear/all" },
+      products: { endpoint: "/products/clear/all" },
+    };
 
     try {
       setLoading(true);
       if (type === "all") {
-        await API.delete(cleanupMap.restaurant.endpoint);
-        await API.delete(cleanupMap.pos.endpoint);
-        await API.delete(cleanupMap.products.endpoint);
+        await API.delete(cleanupMap.restaurant.endpoint, { data: { password } });
+        await API.delete(cleanupMap.pos.endpoint, { data: { password } });
+        await API.delete(cleanupMap.products.endpoint, { data: { password } });
       } else {
-        await API.delete(target.endpoint);
+        await API.delete(cleanupTarget.endpoint, { data: { password } });
       }
-      alert(`${target.label} deleted successfully`);
+      alert(`${cleanupTarget.label} deleted successfully`);
+      setCleanupTarget(null);
     } catch (error) {
       alert(error.response?.data?.message || "Cleanup failed");
     } finally {
@@ -200,10 +212,10 @@ export default function Settings() {
             onChange={(e) => change("gstNumber", e.target.value)}
           />
 
-          <input
-            placeholder="Store Contact"
+          <PhoneInput
+            placeholder="Store contact"
             value={settings.storeContact}
-            onChange={(e) => change("storeContact", e.target.value)}
+            onChange={(value) => change("storeContact", value)}
           />
 
           <input
@@ -399,6 +411,14 @@ export default function Settings() {
           </button>
         </div>
       </div>
+      <DeleteConfirmModal
+        open={!!cleanupTarget}
+        title="Delete Testing Data?"
+        message={`${cleanupTarget?.label || "Selected records"} will be deleted. Enter login password to continue.`}
+        confirmText="Delete Data"
+        onCancel={() => setCleanupTarget(null)}
+        onConfirm={confirmCleanup}
+      />
     </div>
   );
 }

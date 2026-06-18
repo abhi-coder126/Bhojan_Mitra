@@ -1,4 +1,6 @@
 const Vendor = require("../models/Vendor");
+const DeletionLog = require("../models/DeletionLog");
+const { verifyDeletePassword } = require("../utils/deleteAuth");
 
 exports.createVendor = async (req, res) => {
   try {
@@ -31,9 +33,20 @@ exports.updateVendor = async (req, res) => {
 
 exports.deleteVendor = async (req, res) => {
   try {
+    const user = await verifyDeletePassword(req);
+    const vendor = await Vendor.findById(req.params.id);
+    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+
     await Vendor.findByIdAndDelete(req.params.id);
+    await DeletionLog.create({
+      recordType: "Vendor",
+      recordNo: vendor.gstNumber || vendor.phone || "",
+      title: vendor.name,
+      deletedBy: user.name,
+      details: `Pending Rs ${Number(vendor.pendingAmount || 0).toFixed(2)}`,
+    });
     res.json({ success: true, message: "Vendor deleted" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };

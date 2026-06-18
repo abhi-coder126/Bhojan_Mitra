@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import API from "../api/axios";
+import PhoneInput from "../components/PhoneInput";
 export default function Purchase() {
   const [vendors, setVendors] = useState([]);
   const [products, setProducts] = useState([]);
@@ -740,12 +741,10 @@ export default function Purchase() {
                 required
               />
 
-              <input
-                placeholder="Mobile Number"
+              <PhoneInput
+                placeholder="Mobile number"
                 value={vendorForm.phone}
-                onChange={(e) =>
-                  setVendorForm({ ...vendorForm, phone: e.target.value })
-                }
+                onChange={(value) => setVendorForm({ ...vendorForm, phone: value })}
               />
 
               <input

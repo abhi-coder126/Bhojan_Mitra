@@ -2,6 +2,50 @@ const Product = require("../models/Product");
 const RestaurantOrder = require("../models/RestaurantOrder");
 const Customer = require("../models/Customer");
 const Coupon = require("../models/Coupon");
+const Counter = require("../models/Counter");
+const DeletionLog = require("../models/DeletionLog");
+const { verifyDeletePassword } = require("../utils/deleteAuth");
+
+const nextInvoiceNo = async () => {
+  const counter = await Counter.findByIdAndUpdate(
+    "invoice",
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+  return `INV-${counter.seq}`;
+};
+
+const normalizeContact = (value) => String(value || "").trim();
+const normalizeEmail = (value) => String(value || "").trim().toLowerCase();
+
+const upsertCustomerFromOrder = async ({ customerName, customerPhone, customerEmail, deliveryAddress }) => {
+  const contact = normalizeContact(customerPhone);
+  if (!contact) return null;
+
+  const email = normalizeEmail(customerEmail);
+  const existing = await Customer.findOne({
+    $or: [{ contact }, ...(email ? [{ email }] : [])],
+  }).sort({ createdAt: 1 });
+
+  if (existing) {
+    existing.name = customerName || existing.name;
+    existing.contact = existing.contact || contact;
+    existing.email = email || existing.email || "";
+    existing.address = deliveryAddress || existing.address || "";
+    await existing.save();
+    return existing;
+  }
+
+  const count = await Customer.countDocuments();
+  return Customer.create({
+    crn: `CRN_${String(count + 1).padStart(3, "0")}`,
+    name: customerName,
+    contact,
+    email,
+    address: deliveryAddress || "",
+    activeFrom: new Date(),
+  });
+};
 
 exports.getMenuProducts = async (req, res) => {
   try {
@@ -11,7 +55,7 @@ exports.getMenuProducts = async (req, res) => {
 
     res.json({ success: true, products });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
@@ -137,6 +181,7 @@ exports.createRestaurantOrder = async (req, res) => {
     }
 
     const order = await RestaurantOrder.create({
+      invoiceNo: await nextInvoiceNo(),
       orderType,
       tableNo: orderType === "delivery" ? "DELIVERY" : tableNo,
       customerName,
@@ -161,28 +206,11 @@ exports.createRestaurantOrder = async (req, res) => {
       }))
     );
 
-    if (customerPhone) {
-      await Customer.findOneAndUpdate(
-        { contact: customerPhone },
-        {
-          $setOnInsert: {
-            crn: `CRN_${Date.now()}`,
-            contact: customerPhone,
-            activeFrom: new Date(),
-          },
-          $set: {
-            name: customerName,
-            email: customerEmail || "",
-            address: deliveryAddress || "",
-          },
-        },
-        { upsert: true, new: true }
-      );
-    }
+    await upsertCustomerFromOrder({ customerName, customerPhone, customerEmail, deliveryAddress });
 
     res.status(201).json({ success: true, order });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
@@ -246,6 +274,7 @@ const restoreRestaurantOrderStock = async (orders) => {
 
 exports.deleteRestaurantOrder = async (req, res) => {
   try {
+    const user = await verifyDeletePassword(req);
     const order = await RestaurantOrder.findById(req.params.id);
 
     if (!order) {
@@ -254,6 +283,13 @@ exports.deleteRestaurantOrder = async (req, res) => {
 
     await restoreRestaurantOrderStock([order]);
     await RestaurantOrder.findByIdAndDelete(req.params.id);
+    await DeletionLog.create({
+      recordType: "Restaurant Invoice",
+      recordNo: order.invoiceNo || order.orderNo,
+      title: order.customerName || "Restaurant order",
+      deletedBy: user.name,
+      details: `${order.orderType === "delivery" ? "Delivery" : `Table ${order.tableNo}`} | Rs ${Number(order.grandTotal || 0).toFixed(2)}`,
+    });
 
     res.json({
       success: true,
@@ -266,9 +302,17 @@ exports.deleteRestaurantOrder = async (req, res) => {
 
 exports.clearRestaurantOrders = async (req, res) => {
   try {
+    const user = await verifyDeletePassword(req);
     const orders = await RestaurantOrder.find();
     await restoreRestaurantOrderStock(orders);
     const result = await RestaurantOrder.deleteMany({});
+    await DeletionLog.create({
+      recordType: "Restaurant Invoices",
+      recordNo: "Bulk delete",
+      title: "All restaurant orders and invoices",
+      deletedBy: user.name,
+      details: `${result.deletedCount || 0} records deleted`,
+    });
 
     res.json({
       success: true,

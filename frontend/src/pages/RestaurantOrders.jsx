@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bell, CheckCircle2, ClipboardList, CreditCard, Printer, RefreshCcw, Search, Utensils, X } from "lucide-react";
+import { Banknote, Bell, CheckCircle2, ClipboardList, CreditCard, Printer, QrCode, RefreshCcw, Search, Smartphone, Utensils, X } from "lucide-react";
 import API from "../api/axios";
 import { ToastViewport, useToast } from "../components/Toast";
+import DeleteConfirmModal from "../components/DeleteConfirmModal";
+import ConfirmActionModal from "../components/ConfirmActionModal";
 
 const statuses = ["new", "accepted", "preparing", "ready", "served", "cancelled"];
 const workflowStatuses = ["new", "accepted", "preparing", "ready", "served"];
@@ -47,6 +49,8 @@ export default function RestaurantOrders() {
   const [paidInvoice, setPaidInvoice] = useState(null);
   const [invoiceSearch, setInvoiceSearch] = useState("");
   const [paymentForm, setPaymentForm] = useState({ mode: "", cash: "", upi: "", card: "" });
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [statusTarget, setStatusTarget] = useState(null);
   const knownOrderIds = useRef(new Set());
   const initialLoadDone = useRef(false);
   const ringTimer = useRef(null);
@@ -187,11 +191,18 @@ export default function RestaurantOrders() {
   );
 
   const updateStatus = async (orderId, status) => {
+    const order = orders.find((item) => item._id === orderId);
+    setStatusTarget({ orderId, status, orderNo: order?.orderNo || "Order" });
+  };
+
+  const confirmStatusUpdate = async () => {
+    if (!statusTarget) return;
     try {
-      await API.patch(`/restaurant-orders/${orderId}/status`, { status });
-      if (status !== "new" && activePopupOrderId === orderId) {
+      await API.patch(`/restaurant-orders/${statusTarget.orderId}/status`, { status: statusTarget.status });
+      if (statusTarget.status !== "new" && activePopupOrderId === statusTarget.orderId) {
         setActivePopupOrderId(null);
       }
+      setStatusTarget(null);
       fetchOrders();
       showToast("Order status updated", "success");
     } catch (error) {
@@ -231,14 +242,17 @@ export default function RestaurantOrders() {
   };
 
   const deleteRestaurantInvoice = async (order) => {
-    const ok = window.confirm(`Delete invoice ${getInvoiceNo(order)}? Stock will be restored for its items.`);
-    if (!ok) return;
+    setDeleteTarget(order);
+  };
 
+  const confirmDeleteRestaurantInvoice = async (password) => {
+    const order = deleteTarget;
     try {
-      await API.delete(`/restaurant-orders/${order._id}`);
+      await API.delete(`/restaurant-orders/${order._id}`, { data: { password } });
       if (paidInvoice?._id === order._id) {
         setPaidInvoice(null);
       }
+      setDeleteTarget(null);
       fetchOrders();
       showToast("Restaurant invoice deleted", "success");
     } catch (error) {
@@ -277,8 +291,7 @@ export default function RestaurantOrders() {
     orders.find((order) => order._id === activePopupOrderId && order.status === "new") ||
     orders.find((order) => order.status === "new");
   const paidInvoices = orders.filter((order) => order.paymentStatus === "paid");
-  const invoicePrefix = orderSettings.invoicePrefix || "INV";
-  const getInvoiceNo = (order) => `${invoicePrefix}-${order.orderNo || order._id?.slice(-6) || "ORDER"}`;
+  const getInvoiceNo = (order) => order.invoiceNo || order.orderNo || `INV-${order._id?.slice(-6) || "ORDER"}`;
   const formatDateTime = (value) =>
     value
       ? new Date(value).toLocaleString("en-IN", {
@@ -548,28 +561,33 @@ export default function RestaurantOrders() {
         {filteredPaidInvoices.length === 0 ? (
           <p>No paid invoice yet.</p>
         ) : (
-          <div className="invoice-history-list">
-            {filteredPaidInvoices.map((order) => (
-              <article className="restaurant-invoice-card" key={order._id}>
-                <button type="button" className="restaurant-invoice-open" onClick={() => setPaidInvoice(order)}>
-                  <div className="restaurant-invoice-card-top">
-                    <span>{getInvoiceNo(order)}</span>
-                    <small>{formatDateTime(order.payment?.paidAt || order.updatedAt || order.createdAt)}</small>
-                  </div>
-                  <div className="restaurant-invoice-card-body">
-                    <b>{order.customerName || "Walk-in Customer"}</b>
-                    <em>{order.orderType === "delivery" ? "Delivery" : `Table ${order.tableNo}`}</em>
-                  </div>
-                  <div className="restaurant-invoice-card-bottom">
-                    <strong>Rs {Number(order.grandTotal || 0).toFixed(2)}</strong>
-                    <span>View invoice</span>
-                  </div>
-                </button>
-                <button type="button" className="invoice-delete-btn" onClick={() => deleteRestaurantInvoice(order)}>
-                  Delete
-                </button>
-              </article>
-            ))}
+          <div className="restaurant-invoice-table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Invoice No</th>
+                  <th>Date</th>
+                  <th>Customer</th>
+                  <th>Type</th>
+                  <th>Total</th>
+                  <th>View</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPaidInvoices.map((order) => (
+                  <tr key={order._id}>
+                    <td>{getInvoiceNo(order)}</td>
+                    <td>{formatDateTime(order.payment?.paidAt || order.updatedAt || order.createdAt)}</td>
+                    <td>{order.customerName || "Walk-in Customer"}</td>
+                    <td>{order.orderType === "delivery" ? "Delivery" : `Table ${order.tableNo}`}</td>
+                    <td>Rs {Number(order.grandTotal || 0).toFixed(2)}</td>
+                    <td><button className="icon-view" onClick={() => setPaidInvoice(order)}>View</button></td>
+                    <td><button type="button" className="invoice-delete-btn" onClick={() => deleteRestaurantInvoice(order)}>Delete</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </section>}
@@ -713,16 +731,12 @@ export default function RestaurantOrders() {
               <strong>Rs {Number(paymentOrder.grandTotal || 0).toFixed(2)}</strong>
             </div>
 
-            <select
-              value={paymentForm.mode}
-              onChange={(e) => setPaymentForm({ ...paymentForm, mode: e.target.value })}
-            >
-              <option value="">Select payment mode *</option>
-              {(orderSettings.cashEnabled ?? true) && <option value="Cash">Cash</option>}
-              {(orderSettings.upiEnabled ?? true) && <option value="UPI">UPI</option>}
-              {(orderSettings.cardEnabled ?? true) && <option value="Card">Card</option>}
-              {(orderSettings.partialPaymentEnabled ?? true) && <option value="Partial">Partial</option>}
-            </select>
+            <div className="payment-mode-grid">
+              {(orderSettings.cashEnabled ?? true) && <PaymentModeButton mode="Cash" active={paymentForm.mode === "Cash"} setPaymentForm={setPaymentForm} icon={<Banknote size={18} />} />}
+              {(orderSettings.upiEnabled ?? true) && <PaymentModeButton mode="UPI" active={paymentForm.mode === "UPI"} setPaymentForm={setPaymentForm} icon={<QrCode size={18} />} />}
+              {(orderSettings.cardEnabled ?? true) && <PaymentModeButton mode="Card" active={paymentForm.mode === "Card"} setPaymentForm={setPaymentForm} icon={<CreditCard size={18} />} />}
+              {(orderSettings.partialPaymentEnabled ?? true) && <PaymentModeButton mode="Partial" active={paymentForm.mode === "Partial"} setPaymentForm={setPaymentForm} icon={<Smartphone size={18} />} />}
+            </div>
 
             {paymentForm.mode === "Partial" && (
               <div className="partial-payment-grid">
@@ -855,6 +869,36 @@ export default function RestaurantOrders() {
           </div>
         </div>
       )}
+
+      <DeleteConfirmModal
+        open={!!deleteTarget}
+        title={`Delete ${deleteTarget ? getInvoiceNo(deleteTarget) : "invoice"}?`}
+        message="Stock will be restored for its items. Enter login password to continue."
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDeleteRestaurantInvoice}
+      />
+
+      <ConfirmActionModal
+        open={!!statusTarget}
+        title="Update Order Status?"
+        message={`${statusTarget?.orderNo || "Order"} ko "${statusTarget?.status || ""}" mark karna hai?`}
+        confirmText="Update Status"
+        onCancel={() => setStatusTarget(null)}
+        onConfirm={confirmStatusUpdate}
+      />
     </div>
+  );
+}
+
+function PaymentModeButton({ mode, active, setPaymentForm, icon }) {
+  return (
+    <button
+      type="button"
+      className={`payment-mode-btn ${active ? "active" : ""}`}
+      onClick={() => setPaymentForm((current) => ({ ...current, mode }))}
+    >
+      {icon}
+      <span>{mode}</span>
+    </button>
   );
 }
